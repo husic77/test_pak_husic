@@ -1,0 +1,1 @@
+GoPay Payment cost short description

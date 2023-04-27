@@ -10,7 +10,7 @@ from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
 # configuration variables
-
+# # test
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
@@ -58,7 +58,7 @@ class Component(ComponentBase):
 
         # in/out file for payment sessions
         with open('../data/in/tables/payments-sessions-stage.csv', mode='r', encoding='utf-8') as ps, \
-            open('/data/out/tables/payment_costs.csv' , mode='w', encoding='utf-8') as pc:
+            open('../data/out/tables/payment_costs.csv' , mode='w', encoding='utf-8') as pc:
             
             payments = csv.DictReader(ps) # reader of payment sessions
             fieldnames = ['payment_session_id', 'amount', 'amount_czk',

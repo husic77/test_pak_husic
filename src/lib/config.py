@@ -4,14 +4,14 @@ from keboola.component import CommonInterface
 
 # init the interface
 # A ValueError error is raised if the data folder path does not exist.
-# ci = CommonInterface(data_folder_path='../data')
+ci = CommonInterface(data_folder_path='../data')
 
 
 class Config:
 
     def __init__(self):
         # self.config_path = config_path
-        self.ci = CommonInterface(data_folder_path='../data')
+        self.ci = CommonInterface('../data/')
         self.params = None
 
     def set_parameters(self):

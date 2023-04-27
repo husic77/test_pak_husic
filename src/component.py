@@ -10,13 +10,12 @@ from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
 # configuration variables
-KEY_API_TOKEN = '#api_token'
-KEY_PRINT_HELLO = 'print_hello'
+
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
-REQUIRED_PARAMETERS = [KEY_PRINT_HELLO]
-REQUIRED_IMAGE_PARS = []
+# REQUIRED_PARAMETERS = [KEY_PRINT_HELLO]
+# REQUIRED_IMAGE_PARS = []
 
 
 class Component(ComponentBase):
@@ -38,39 +37,89 @@ class Component(ComponentBase):
         Main execution code
         """
 
-        # ####### EXAMPLE TO REMOVE
-        # check for missing configuration parameters
-        self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-        self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        params = self.configuration.parameters
-        # Access parameters in data/config.json
-        if params.get(KEY_PRINT_HELLO):
-            logging.info("Hello World")
+        import logging, csv, sys, datetime
+        from lib import config, fee, payment, rate
+        
+        # logging setup
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, datefmt='%Y-%m-%d %H:%M:%S%z', format='%(asctime)s | %(module)s | %(levelname)s | %(message)s')
+        
+        # loading cost fee definitions
+        fees = fee.Fees('../data/in/tables/payment_fees.csv').get_fees()
 
-        # get last state data/in/state.json from previous run
-        previous_state = self.get_state_file()
-        logging.info(previous_state.get('some_state_parameter'))
+        # loading currency rates
+        rates = rate.Rates( '../data/in/tables/gopay_rates.csv', # gopay rates loaded from CNB
+                            '../data/in/tables/eur_rates.csv' # EUR from Keboola
+                        ).set_rates()
 
-        # Create output table (Tabledefinition - just metadata)
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+        # config parameters
+        cfg = config.Config().set_parameters()
+        cfg_date_from = cfg.get_date_from()
+        cfg_exceptions = cfg.get_cost_exceptions()
 
-        # get file path of the table (data/out/tables/Features.csv)
-        out_table_path = table.full_path
-        logging.info(out_table_path)
-
-        # DO whatever and save into out_table_path
-        with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
-            writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
+        # in/out file for payment sessions
+        with open('../data/in/tables/payments-sessions-stage.csv', mode='r', encoding='utf-8') as ps, \
+            open('/data/out/tables/payment_costs.csv' , mode='w', encoding='utf-8') as pc:
+            
+            payments = csv.DictReader(ps) # reader of payment sessions
+            fieldnames = ['payment_session_id', 'amount', 'amount_czk',
+                        'amount_refunded', 'amount_refunded_czk','cost_algorithm',
+                        'interchange_fee', 'interchange_fee_czk', 'association_fee', 
+                        'association_fee_czk', 'provider_transaction_fee', 'provider_transaction_fee_czk',
+                        'provider_percent_fee', 'provider_percent_fee_czk','total_fee', 'total_fee_czk']
+            writer = csv.DictWriter(pc, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerow({"timestamp": datetime.now().isoformat()})
 
-        # Save table manifest (output.csv.manifest) from the tabledefinition
-        self.write_manifest(table)
+            # counter
+            stats = {'processed': 0, 'ignored': 0}
+            
+            # loop over payment sessions in in-file
+            for ps in payments:
 
-        # Write new state - will be available next run
-        self.write_state_file({"some_state_parameter": "value"})
+                # ignore ps before a date_performed_from set in config
+                try:
+                    ps_date_performed = datetime.datetime.strptime(ps['date_performed'][0:10],'%Y-%m-%d').date()
+                    if cfg_date_from > ps_date_performed:
+                        stats['ignored'] += 1
+                        continue
 
-        # ####### EXAMPLE TO REMOVE END
+                except Exception as e:
+                    logging.error('Cannot parse date_performed for payment: {}' . format(ps))
+                    raise e
+
+                # only successful payments
+                if ps['session_state'] in ('PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'):
+
+                    # prepare payment details
+                    p = payment.Payment(ps, fees, rates, cfg_exceptions).process_payment()
+
+                    # final payment output
+                    p_final = {
+                        'payment_session_id': p.parsed['payment_session_id'],
+                        'amount': p.parsed['amount'],
+                        'amount_czk': p.parsed['amount_czk'],
+                        'amount_refunded': p.parsed['amount_refunded'],
+                        'amount_refunded_czk': p.parsed['amount_refunded_czk'],
+                        'cost_algorithm': p.parsed['cost_algorithm'],
+                        'interchange_fee': p.parsed['interchange_fee'],
+                        'interchange_fee_czk': p.parsed['interchange_fee_czk'],
+                        'association_fee': p.parsed['association_fee'], 
+                        'association_fee_czk': p.parsed['association_fee_czk'],
+                        'provider_transaction_fee': p.parsed['provider_transaction_fee'], 
+                        'provider_transaction_fee_czk': p.parsed['provider_transaction_fee_czk'],
+                        'provider_percent_fee': p.parsed['provider_percent_fee'], 
+                        'provider_percent_fee_czk': p.parsed['provider_percent_fee_czk'],
+                        'total_fee': p.parsed['total_fee'], 
+                        'total_fee_czk': p.parsed['total_fee_czk']
+                    }
+
+                    # writer row to file
+                    writer.writerow(p_final)
+                    
+                    stats['processed'] += 1
+
+
+        logging.info('Finished! Run stats: {}'. format(str(stats)))
+
 
 
 """

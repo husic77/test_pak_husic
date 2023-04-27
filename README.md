@@ -1,83 +1,21 @@
-GoPay Payment cost
-=============
+# app-gopay-payment-cost #
 
-Description
+*Aplikace, která přepočítává COSTs pro jednotlivé platby*
 
-**Table of contents:**
+## INPUT DATA ##
+- payment sessions - `in.c-reporting.payments-sessions-stage`
+- definice poplatků pro jednolité typy plateb - `in.c-keboola-ex-google-drive-259059282.payment-methods-cost-fees`
+- gopay currency rates - `in.c-gopay-db.currency-rates`
+- keboola currency rates (EUR) - `in.c-keboola-ex-currency-335520551.rates`
 
-[TOC]
+## OUTPUT data ##
+- tabulka s vypočítaným rozpadem poplatků `in.c-gopay-db.payment-cost`
 
-Functionality notes
-===================
+## config.json ##
+- *date_performed_from* - `null` a nebo ve formátu `YYYY-MM-DD`. Platby z `in.c-reporting.payments-sessions-stage` před tímto datumem se ignorují 
+- *partnership_cost_exceptions* - seznam `partnership_id`ček, kterým se krátí určitým poměrem shema fees
+- příklad konfirurace zde: https://bitbucket.org/gopayreporting/app-gopay-payment-cost/src/master/test_data/config.json
 
-Prerequisites
-=============
+ChangeLog
+- 2019-10-08 - konfigurovatelnost pomocí `config.json`
 
-Get the API token, register application, etc.
-
-Features
-========
-
-| **Feature**             | **Note**                                      |
-|-------------------------|-----------------------------------------------|
-| Generic UI form         | Dynamic UI form                               |
-| Row Based configuration | Allows structuring the configuration in rows. |
-| oAuth                   | oAuth authentication enabled                  |
-| Incremental loading     | Allows fetching data in new increments.       |
-| Backfill mode           | Support for seamless backfill setup.          |
-| Date range filter       | Specify date range.                           |
-
-Supported endpoints
-===================
-
-If you need more endpoints, please submit your request to
-[ideas.keboola.com](https://ideas.keboola.com/)
-
-Configuration
-=============
-
-Param 1
--------
-
-Param 2
--------
-
-Output
-======
-
-List of tables, foreign keys, schema.
-
-Development
------------
-
-If required, change local data folder (the `CUSTOM_FOLDER` placeholder) path to
-your custom path in the `docker-compose.yml` file:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    volumes:
-      - ./:/code
-      - ./CUSTOM_FOLDER:/data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Clone this repository, init the workspace and run the component with following
-command:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-git clone https://github.com/husic77/test_pak_husic gopay_payment_cost
-cd gopay_payment_cost
-docker-compose build
-docker-compose run --rm dev
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Run the test suite and lint check using this command:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-docker-compose run --rm test
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Integration
-===========
-
-For information about deployment and integration with KBC, please refer to the
-[deployment section of developers
-documentation](https://developers.keboola.com/extend/component/deployment/)

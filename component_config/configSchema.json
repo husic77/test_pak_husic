@@ -1,19 +1,15 @@
 {
-  "type": "object",
-  "title": "extractor configuration",
-  "required": [
-    "print_hello"
-  ],
-  "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello",
-      "propertyOrder": 1
-    },
-    "debug": {
-      "type": "boolean",
-      "title": "Debug",
-      "propertyOrder": 2
-    }
+  "date_performed_from": "2023-03-31",
+  "partnership_cost_exceptions": {
+    "33198173": [
+      {
+        "merchant": "Skylink",
+        "description": "AF & IF poplatky od 1.5. se dělí mezi GOPAY a TP",
+        "podio_link": "https://podio.com/gopaycz/management/apps/pozadavky-2/items/10244",
+        "date_from": "2021-07-01",
+        "date_to": null,
+        "gopay_percent": 0.5
+      }
+    ]
   }
 }
